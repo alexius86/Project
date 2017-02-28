@@ -1,0 +1,3 @@
+[submodule "sightline_lidar_client"]
+	path = sightline_lidar_client
+	url = git@bitbucket.org:electricmonk/sightline_lidar_client.git
