@@ -12,7 +12,18 @@ public class SiteData {
 	public string site_name = "none";
 	public string site_description = "none";
 }
-	
+
+[System.Serializable]
+/// <summary>
+/// Data related to the status.
+/// </summary>
+public class ReponseStatus
+{
+    public string status = "none";
+    public string error = "none";
+}
+
+
 [System.Serializable]
 /// <summary>
 /// Data related to a specific slab.

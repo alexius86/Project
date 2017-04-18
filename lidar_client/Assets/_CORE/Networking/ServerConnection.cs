@@ -1,10 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using System;
 using BestHTTP;
 using BestHTTP.Authentication;
-
 using com.ootii.Messages;
 
 /// <summary>
@@ -15,31 +14,24 @@ using com.ootii.Messages;
 /// </summary>
 public class ServerConnection : MonoBehaviour {
 
-	#region Old - To Be Removed
-	[SerializeField] private string url = "http://private-8bed3-slclient.apiary-mock.com";
-	[SerializeField] private string versionPrefix = "/v1";
-	[Space(10.0f)]
-	[SerializeField] private string pingUrl = "/ping"; // initial server ping
-	[SerializeField] private string loginUrl = "/login"; // login 
-	[SerializeField] private string listSitesUrl = "/sites"; // list of all available sites
-	[SerializeField] private string siteDetailUrl = "/site/"; // details of selected site & list of slabs (/v1/site/{site_id}
-	#endregion
-
 	[Space(10.0f)]
 	[SerializeField] private ServerMessagePopup messagePopup;
 	[Range(1, 60)]
 	[SerializeField] private int pingTimeoutSeconds = 5;
 
-	[Header("Production Server")]	//NOTE: These should eventually replace url, versionPrefix, <whatever>Url variables above (when server is up).
+	//[Header("Production Server")]	//NOTE: These should eventually replace , versionPrefix, <whatever> variables above (when server is up).
 	#region Notes
-	// Eg.) GET uri + sites + <site_name> + "/" + <slab_name> + "/" + <scan_name> + "/"
+	// Eg.) GET url + sites + <site_name> + "/" + <slab_name> + "/" + <scan_name> + "/"
 	//			- Returns json of scan info, not actual binary.
 
-	// Eg.) GET uri + sites + <site_name> + slabs + "/"
+	// Eg.) GET url + sites + <site_name> + slabs + "/"
 	//			- Returns json for all slabs associated with the site.
 	#endregion
-	[SerializeField] private string uri = "http://deployed_instance_address.com/v1/";
-	[SerializeField] private string auth = "auth/";
+
+
+	
+    [SerializeField] private string url = "http://10.32.16.183:5001/v1/";
+    [SerializeField] private string auth = "auth/";
 	[SerializeField] private string ping = "ping/";
 	[SerializeField] private string user = "user/";
 	[SerializeField] private string sites = "sites/";
@@ -47,7 +39,7 @@ public class ServerConnection : MonoBehaviour {
 	[SerializeField] private string scans = "scans/";
 	[SerializeField] private string download = "download";
 
-	[Header("Debug")]
+	//[Header("Debug")]
 	[SerializeField] private bool debug_logs_enabled = false;
 
 	// Debug events.
@@ -88,9 +80,11 @@ public class ServerConnection : MonoBehaviour {
 	public void RequestAuthentication (string userName, string password) {	// xxx NOTE: Apiary doesn't support this yet 
 		
 		// Prepare request.
-		HTTPRequest request = new HTTPRequest (new System.Uri (uri + auth), HTTPMethods.Post, OnAuthenticationCompleted);
+		HTTPRequest request = new HTTPRequest (new System.Uri (url + auth), HTTPMethods.Post, OnAuthenticationCompleted);
 		request.ConnectTimeout = new System.TimeSpan (0, 0, pingTimeoutSeconds);
-		request.Credentials = new Credentials (userName, password);
+		request.AddField ("username", userName);
+		request.AddField ("password", password);
+//		request.Credentials = new Credentials (userName, password);
 		DebugPrint ("Requesting authentication for login.");
 		request.Send ();
 	}
@@ -98,8 +92,7 @@ public class ServerConnection : MonoBehaviour {
 	void OnAuthenticationCompleted (HTTPRequest request, HTTPResponse response) {
 
 		string message = "";
-
-		if (response == null) {
+        if (response == null) {
 
 			message = "Authentication for login request failed.\n" + "Unable to reach server. Please check your internet connection.";
 			messagePopup.ShowMessage (message);
@@ -107,7 +100,19 @@ public class ServerConnection : MonoBehaviour {
 		} 
 		else if (response.IsSuccess) {
 
-			MessageDispatcher.SendMessage (MessageDatabase.user_auth_success);
+            ReponseStatus status = JsonUtility.FromJson<ReponseStatus>(response.DataAsText);
+
+            if (status.status == "ok")
+            {
+                // login successful
+                MessageDispatcher.SendMessage(MessageDatabase.user_auth_success);
+            }
+            else if (status.error != "none") {
+
+                message = status.error;
+                messagePopup.ShowMessage(message);
+                MessageDispatcher.SendMessage(this, MessageDatabase.user_auth_failure, message, 0.0f);
+            }
 		} 
 		else if (!response.IsSuccess) {
 
@@ -121,9 +126,9 @@ public class ServerConnection : MonoBehaviour {
 	#region User Details
 	public void RequestUser () {
 
-		string targetUrl = uri + user;
+		string target = url + user;
 
-		HTTPRequest request = new HTTPRequest (new System.Uri (uri + user), HTTPMethods.Get, OnUserRequestCompleted);
+		HTTPRequest request = new HTTPRequest (new System.Uri (url + user), HTTPMethods.Get, OnUserRequestCompleted);
 		request.ConnectTimeout = new System.TimeSpan (0, 0, pingTimeoutSeconds);
 		DebugPrint ("Requesting current user info.");
 		request.Send ();
@@ -148,7 +153,7 @@ public class ServerConnection : MonoBehaviour {
 	#region Sites
 	public void DeleteAllSites () {
 
-		HTTPRequest request	= new HTTPRequest (new System.Uri (uri + sites), HTTPMethods.Delete, OnSiteDeletionCompleted);
+		HTTPRequest request	= new HTTPRequest (new System.Uri (url + sites), HTTPMethods.Delete, OnSiteDeletionCompleted);
 		request.ConnectTimeout = new System.TimeSpan (0, 0, pingTimeoutSeconds);
 		DebugPrint ("Deleting all sites.");
 		request.Send ();
@@ -171,7 +176,7 @@ public class ServerConnection : MonoBehaviour {
 
 	public void AddSite (string name, string description) {
 
-		HTTPRequest request	= new HTTPRequest (new System.Uri (uri + sites), HTTPMethods.Post, OnAddSiteCompleted);
+		HTTPRequest request	= new HTTPRequest (new System.Uri (url + sites), HTTPMethods.Post, OnAddSiteCompleted);
 		request.ConnectTimeout = new System.TimeSpan (0, 0, pingTimeoutSeconds);
 		request.AddField ("name", name);
 		request.AddField ("description", description);
@@ -196,7 +201,7 @@ public class ServerConnection : MonoBehaviour {
 		
 	public void EditSite (string siteName, string siteNewName, string siteNewDescription) {
 
-		HTTPRequest request	= new HTTPRequest (new System.Uri (uri + sites), HTTPMethods.Post, OnAddSiteCompleted);
+		HTTPRequest request	= new HTTPRequest (new System.Uri (url + sites), HTTPMethods.Post, OnAddSiteCompleted);
 		request.ConnectTimeout = new System.TimeSpan (0, 0, pingTimeoutSeconds);
 		request.AddField ("name", siteNewName);
 		request.AddField ("description", siteNewDescription);
@@ -224,12 +229,12 @@ public class ServerConnection : MonoBehaviour {
 	/// </summary>
 	public void RequestSiteList () {
 
-		string targetUrl = url + versionPrefix + listSitesUrl;	//TODO: "= uri + sites"
+		string target = url + sites;	//TODO: "= url + sites"
 
 		// Prepare request.
-		HTTPRequest request	= new HTTPRequest (new System.Uri (targetUrl), OnSiteListDataRequestCompletedDelegate);
+		HTTPRequest request	= new HTTPRequest (new System.Uri (target), OnSiteListDataRequestCompletedDelegate);
 		request.ConnectTimeout = new System.TimeSpan (0, 0, pingTimeoutSeconds);
-		DebugPrint ("Requesting: " + targetUrl);
+		DebugPrint ("Requesting: " + target);
 		request.Send ();
 	}
 
@@ -262,12 +267,12 @@ public class ServerConnection : MonoBehaviour {
 	/// </summary>
 	public void RequestSlabList (int site_id) {
 
-		string targetUrl = url + versionPrefix + siteDetailUrl + site_id + "/slabs";
+		string target =  url + sites + site_id + "/slabs";
 
 		// Prepare request.
-		HTTPRequest request	= new HTTPRequest (new System.Uri (targetUrl), OnSlabListDataRequestCompletedDelegate);
+		HTTPRequest request	= new HTTPRequest (new System.Uri (target), OnSlabListDataRequestCompletedDelegate);
 		request.ConnectTimeout = new System.TimeSpan (0, 0, pingTimeoutSeconds);
-		DebugPrint ("Requesting: " + targetUrl);
+		DebugPrint ("Requesting: " + target);
 		request.Send ();
 	}
 
@@ -299,12 +304,12 @@ public class ServerConnection : MonoBehaviour {
 	/// </summary>
 	public void RequestScanList (int site_id, int slab_id) {
 
-		string targetUrl = url + versionPrefix + siteDetailUrl + site_id + "/" + slab_id + "/scans";
+		string target = url  + sites + site_id + "/" + slab_id + "/scans";
 
 		// Prepare request.
-		HTTPRequest request	= new HTTPRequest (new System.Uri (targetUrl), OnScanListDataRequestCompletedDelegate);
+		HTTPRequest request	= new HTTPRequest (new System.Uri (target), OnScanListDataRequestCompletedDelegate);
 		request.ConnectTimeout = new System.TimeSpan (0, 0, pingTimeoutSeconds);
-		DebugPrint ("Requesting: " + targetUrl);
+		DebugPrint ("Requesting: " + target);
 		request.Send ();
 	}
 

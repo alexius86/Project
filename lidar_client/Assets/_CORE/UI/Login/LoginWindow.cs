@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+
 using com.ootii.Messages;
 
 /// <summary>
@@ -13,7 +14,7 @@ using com.ootii.Messages;
 public class LoginWindow : MonoBehaviour {
   
 	[Space(5.0f)]
-	[SerializeField] private bool skipAuthentication = true;
+	[SerializeField] private bool skipAuthentication = false;
 
 	[Space(5.0f)]
 	[SerializeField] private InputField userName;
@@ -41,9 +42,9 @@ public class LoginWindow : MonoBehaviour {
 
 		if (!acceptingInput) return;
 
-		if (skipAuthentication) {
-			Login ();
-		}
+//		if (skipAuthentication) {
+//			Login ();
+//		}
 		else {
 
 			ServerConnection.Instance.RequestAuthentication (userName.text, password.text);
@@ -64,8 +65,8 @@ public class LoginWindow : MonoBehaviour {
 
 	private void OnAuthSuccess (IMessage message) {
 
-		// Session cookie should be set for subsequent requests to use.
-
+        // Session cookie should be set for subsequent requests to use.
+        print(message.Data);
 		Login ();
 	}
 
@@ -86,5 +87,6 @@ public class LoginWindow : MonoBehaviour {
 
 		// Unblock input.
 		Toggle(true);
+		
 	}
 }
