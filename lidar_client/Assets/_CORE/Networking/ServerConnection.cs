@@ -267,7 +267,7 @@ public class ServerConnection : MonoBehaviour {
 	/// </summary>
 	public void RequestSlabList (int site_id) {
 
-		string target =  url + sites + site_id + "/slabs";
+		string target =  url + sites + site_id + "/slabs/";
 
 		// Prepare request.
 		HTTPRequest request	= new HTTPRequest (new System.Uri (target), OnSlabListDataRequestCompletedDelegate);
@@ -304,7 +304,7 @@ public class ServerConnection : MonoBehaviour {
 	/// </summary>
 	public void RequestScanList (int site_id, int slab_id) {
 
-		string target = url  + sites + site_id + "/" + slab_id + "/scans";
+		string target = url  + sites + site_id + "/" + slab_id + "/scans/";
 
 		// Prepare request.
 		HTTPRequest request	= new HTTPRequest (new System.Uri (target), OnScanListDataRequestCompletedDelegate);

@@ -44,6 +44,7 @@ public class ScanData {
 	
 	public int scan_id = -1;
 	public string type = "none";
+    public string name = "none";
 	public string timestamp = "none";
 	public double longitude = 0.0;
 	public double latitude = 0.0;

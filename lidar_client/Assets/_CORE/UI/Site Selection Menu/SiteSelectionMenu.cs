@@ -235,7 +235,7 @@ public class SiteSelectionMenu : MonoBehaviour {
 
       		newScan.Data = scans [i];
 			newScan.ItemID = scans [i].scan_id;
-			newScan.ItemName = newScan.ItemID.ToString ();
+			newScan.ItemName = scans [i].name.ToString ();
 
 			// Place within list layout.
 			newScan.transform.SetParent (scanSelectContentRoot, false);

@@ -7,9 +7,11 @@ using UnityEngine;
 public static class JSONHelper {
 	// parses a json list into a generic array, which is returned
 	public static T[] FromJson<T>(string json){
-		Wrapper<T> wrapper = JsonUtility.FromJson<Wrapper<T>> (json);
-		return wrapper.Items;
-	}
+
+        string newJson = "{ \"Items\": " + json + "}";
+        Wrapper<T> wrapper = JsonUtility.FromJson<Wrapper<T>>(newJson);
+        return wrapper.Items;
+    }
 
 	// Iterates a list and returns the json recursively. 
 	public static string ToJson<T>(T[] array){
