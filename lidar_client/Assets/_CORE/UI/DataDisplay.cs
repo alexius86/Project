@@ -6,6 +6,19 @@ using UnityEngine.UI;
 
 using com.ootii.Messages;
 
+public class CurrentStatus
+{
+    public static string siteName = "";
+    public static string siteDescription = "";
+    public static int siteID = -1;
+    public static string slabName = "";
+    public static string slabDescription = "";
+    public static int slabID = -1;
+    public static string scanName = "";
+    public static string scanType = "w";
+    public static int scanID = -1;
+}
+
 public class DataDisplay : DetailsPanelToggleItem {
 
 	[Space(10.0f)]
@@ -60,7 +73,12 @@ public class DataDisplay : DetailsPanelToggleItem {
 		//Debug.Log ("Got site data in details display.");
 
 		SiteData data = (SiteData)(message.Data);
-		siteName.text = "Site: " + data.site_name;
+
+        CurrentStatus.siteID = data.site_id;
+        CurrentStatus.siteName = data.site_name;
+        CurrentStatus.siteDescription = data.site_description;
+
+        siteName.text = "Site: " + data.site_name;
 		siteDescription.text = "Description: " + data.site_description;
 	}
 	#endregion
@@ -82,8 +100,15 @@ public class DataDisplay : DetailsPanelToggleItem {
 
 	private void SlabDataSelected (IMessage message) {
 
+
+
 		SlabData data = (SlabData)(message.Data);
-		slabName.text = "Slab: " + data.slab_name;
+
+        CurrentStatus.slabID = data.slab_id;
+        CurrentStatus.slabName = data.slab_name;
+        CurrentStatus.slabDescription = data.description;
+
+        slabName.text = "Slab: " + data.slab_name;
 		slabDescription.text = "Description: " + data.description;
 	}
 	#endregion
@@ -106,7 +131,12 @@ public class DataDisplay : DetailsPanelToggleItem {
 	private void ScanDataSelected (IMessage message) {
 
 		ScanData data = (ScanData)(message.Data);
-		scanName.text = "Scan ID: " + data.scan_id;
+
+        CurrentStatus.scanID = data.scan_id;
+        CurrentStatus.scanName = data.name;
+        CurrentStatus.scanType = data.type;
+
+        scanName.text = "Scan ID: " + data.scan_id;
 		scanDescription.text = "Timestamp: " + data.timestamp + "\nType: " + data.type + "\nLatitude: " + data.latitude + "\nLongitude: " + data.longitude;
 	}
 	#endregion

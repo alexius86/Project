@@ -5,13 +5,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using BestHTTP;
+using com.ootii.Messages;
 
 public class ScreenshotTool : MonoBehaviour {
 
 	[Space(5.0f)]
 	// If true, show UI with thumbnail image and input fields for image name and album name.
 	// If false, only show "screenshot saved" notification for a few seconds. Image is saved to camera roll with iOS defined name.
-	[SerializeField] private bool namingEnabled = false;
+	[SerializeField] private bool namingEnabled = true;
 	[SerializeField] private GameObject screenshotSavedNotification;
 	[SerializeField] private float notificationShownTime = 2.0f;
 
@@ -24,10 +25,13 @@ public class ScreenshotTool : MonoBehaviour {
 	[SerializeField] private string fileFormat = "png";
 
 	[Space(5.0f)]
-	[SerializeField] private bool sendToServer = false;
-	[SerializeField] private string serverUri = "";
+	[SerializeField] private bool sendToServer = true;
+	[SerializeField] private string serverUri = "http://10.32.16.183:5001/v1/";
+    [SerializeField] private string currentSite = "";
+    [SerializeField] private string currentSlab = "";
+    [SerializeField] private string currentScan = "";
 
-	[Space(5.0f)]
+    [Space(5.0f)]
 	[SerializeField] private bool saveToPhotoLibrary = false;
 
 	[Space(10.0f)]
@@ -40,10 +44,20 @@ public class ScreenshotTool : MonoBehaviour {
 	}
 
 	void OnDisable () {
-		//ScreenshotManager.OnImageSaved -= OnImageSaved;
+	    //ScreenshotManager.OnImageSaved -= OnImageSaved;
 	}
 
-	public void TakeScreenshot () {
+
+
+
+    private void SiteDataSelected(IMessage message)
+    {
+        //Debug.Log ("Got site data in details display.");
+        SiteData data = (SiteData)(message.Data);
+    }
+
+
+    public void TakeScreenshot () {
 
 		currentScreen = new Texture2D (Screen.width, Screen.height, TextureFormat.ARGB32, false);
 
@@ -95,9 +109,13 @@ public class ScreenshotTool : MonoBehaviour {
 		#endif
 
 		if (sendToServer) {
-			HTTPRequest postScreenshot = new HTTPRequest (new System.Uri(serverUri), HTTPMethods.Post);
+			HTTPRequest postScreenshot = new HTTPRequest (new System.Uri(serverUri + "image_upload/"), HTTPMethods.Post);
+            print(CurrentStatus.scanName);
+
 			postScreenshot.AddBinaryData ("screenshot", currentScreen.GetRawTextureData (), nameField + fileFormat);
-			postScreenshot.Send ();
+            postScreenshot.AddField("name", nameField + "");
+            postScreenshot.AddField("format", fileFormat + "");
+            postScreenshot.Send ();
 		}
 
 		Close ();
