@@ -17,6 +17,12 @@ public class CurrentStatus
     public static string scanName = "";
     public static string scanType = "w";
     public static int scanID = -1;
+    public static float lowerThreshhold = 0;
+    public static float upperThreshhold = 0;
+    public static float TargetMinThreshhold = 0;
+    public static float TargetMaxThreshhold = 0;
+
+    // tolerance
 }
 
 public class DataDisplay : DetailsPanelToggleItem {

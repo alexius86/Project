@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using TMPro;
 using BestHTTP;
 using com.ootii.Messages;
+using System;
 
 public class ScreenshotTool : MonoBehaviour {
 
@@ -20,8 +21,10 @@ public class ScreenshotTool : MonoBehaviour {
 	[SerializeField] private GameObject previewRoot;
 	[SerializeField] private Image previewImage;
 	[SerializeField] private TMP_InputField nameField;
-  	[SerializeField] private TMP_InputField albumField;
-	[SerializeField] private string defaultImageName = "IMG_001";
+  	[SerializeField] private TMP_InputField locationField;
+    [SerializeField] private TMP_InputField notesField;
+
+    [SerializeField] private string defaultImageName = "IMG_001";
 	[SerializeField] private string fileFormat = "png";
 
 	[Space(5.0f)]
@@ -111,10 +114,19 @@ public class ScreenshotTool : MonoBehaviour {
 		if (sendToServer) {
 			HTTPRequest postScreenshot = new HTTPRequest (new System.Uri(serverUri + "image_upload/"), HTTPMethods.Post);
             print(CurrentStatus.scanName);
-
-			postScreenshot.AddBinaryData ("screenshot", currentScreen.GetRawTextureData (), nameField + fileFormat);
-            postScreenshot.AddField("name", nameField + "");
+            // location, datetime, tolerance, grid spacing not avilable. other notes. 
+            //postScreenshot.AddBinaryData ("screenshot", currentScreen.GetRawTextureData (), nameField.text + fileFormat);
+            postScreenshot.AddBinaryData("screenshot", currentScreen.EncodeToPNG(), nameField.text + fileFormat);
+            postScreenshot.AddField("name", nameField.text + "");
             postScreenshot.AddField("format", fileFormat + "");
+            postScreenshot.AddField("location",locationField.text);
+            postScreenshot.AddField("site_name", CurrentStatus.siteName);
+            postScreenshot.AddField("slab_name", CurrentStatus.slabName);
+            postScreenshot.AddField("scan_id", CurrentStatus.scanID.ToString());
+            postScreenshot.AddField("datetime", String.Format("{0:u}", DateTime.Now) + "");
+            postScreenshot.AddField("grid_spacing", "not yet implemented");
+            postScreenshot.AddField("tolerance",  CurrentStatus.lowerThreshhold.ToString()); // and and whatever threshold value
+            postScreenshot.AddField("notes", notesField.text + "");
             postScreenshot.Send ();
 		}
 

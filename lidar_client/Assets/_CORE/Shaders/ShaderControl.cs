@@ -28,7 +28,23 @@ public class ShaderControl : MonoBehaviour {
 	[SerializeField] private string targetHeightMax = "_Target_Height_Max";
 	[SerializeField] private string upperHeight = "_Top_Height";
 
+    void UpdateCurrentStatus() {
 
+
+        if (levelingTool.currentMaterial != null)
+        {
+            CurrentStatus.lowerThreshhold = levelingTool.currentMaterial.GetFloat(lowerHeight);
+            CurrentStatus.upperThreshhold = levelingTool.currentMaterial.GetFloat(upperHeight);
+            CurrentStatus.TargetMinThreshhold = levelingTool.currentMaterial.GetFloat(targetHeightMin);
+            CurrentStatus.TargetMaxThreshhold = levelingTool.currentMaterial.GetFloat(targetHeightMax);
+        }
+        else {
+            CurrentStatus.lowerThreshhold = heightMapMaterial.GetFloat(lowerHeight);
+            CurrentStatus.upperThreshhold = heightMapMaterial.GetFloat(upperHeight);
+            CurrentStatus.TargetMinThreshhold = heightMapMaterial.GetFloat(targetHeightMin);
+            CurrentStatus.TargetMaxThreshhold = heightMapMaterial.GetFloat(targetHeightMax);
+        }
+    }
 	void OnEnable () {
 
 		// Set current values.
@@ -46,7 +62,9 @@ public class ShaderControl : MonoBehaviour {
 			targetMaxInputField.text = heightMapMaterial.GetFloat (targetHeightMax).ToString ();
 			upperInputField.text = heightMapMaterial.GetFloat (upperHeight).ToString ();
 		}
-	}
+        UpdateCurrentStatus();
+
+    }
 
 	/// <summary>
 	/// Tries to parse a float value from a string. If parse is ok, tries to set value for material property.
@@ -65,7 +83,9 @@ public class ShaderControl : MonoBehaviour {
 
 		if (parseOk) {
 
-			heightMapMaterial.SetFloat (property, val);
+
+            
+            heightMapMaterial.SetFloat (property, val);
 			heightMapMaterialVolumeBased.SetFloat (property, val);
 
 			if (levelingTool.currentMaterial != null) {
@@ -73,7 +93,10 @@ public class ShaderControl : MonoBehaviour {
 			} else {
 				Debug.LogWarning ("Unable to set " + val + " as value for " + property + " because current material is null.");
 			}
-		} 
+
+            // everytime the parse is set as a proper value, update the currentStatus with the threshhold values.
+            UpdateCurrentStatus();
+        } 
 		else {
 			Debug.LogWarning ("Unable to parse " + valueText + " to float value.");
 		}
