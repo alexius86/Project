@@ -1,0 +1,179 @@
+- name: "Update installed packages"
+  become: true
+  yum: name=* state=latest
+
+- name: "Installing software packages"
+  become: true
+  yum: package={{ item }} state=installed
+  with_items:
+  - vim
+  - wget
+  - java-1.8.0-openjdk-devel
+  - rsync
+  - openssh-server
+
+- name: "Set Java as an environment variable"
+  lineinfile:
+    path: ~/.bashrc
+    insertafter: EOF
+    line: 'export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk'
+
+- name: "Update the environment variables of the current session"
+  shell: source ~/.bashrc && echo $JAVA_HOME
+
+- name: "Modify java security file"
+  become: true
+  lineinfile:
+    path: /usr/lib/jvm/java-1.8.0-openjdk/jre/lib/security/java.security
+    regexp: 'securerandom.source=file:/dev/random'
+    line: 'securerandom.source=file:/dev/./urandom'
+
+- name: "Add 0.0.0.0 to known_hosts"
+  shell: ssh -o "StrictHostKeyChecking no" 0.0.0.0
+
+- name: "Create Download directory"
+  file: 
+    path: Download
+    state: directory
+    mode: 0755
+
+- name: "Create Install directory"
+  file:
+    path: Install
+    state: directory
+    mode: 0755
+ 
+- name: "Download Hadoop"
+  get_url:
+    url: http://www-us.apache.org/dist/hadoop/common/hadoop-2.8.0/hadoop-2.8.0.tar.gz
+    dest: ~/Download/hadoop-2.8.0.tar.gz      
+
+- name: "Download Zookeeper"
+  get_url:
+    url: http://www-us.apache.org/dist/zookeeper/stable/zookeeper-3.4.10.tar.gz
+    dest: ~/Download/zookeeper-3.4.10.tar.gz
+
+- name: "Download Accumulo"
+  get_url:
+    url: http://www-eu.apache.org/dist/accumulo/1.8.1/accumulo-1.8.1-bin.tar.gz
+    dest: ~/Download/accumulo-1.8.1-bin.tar.gz
+
+- name: "Unpack hadoop"
+  unarchive:
+    src: ~/Download/hadoop-2.8.0.tar.gz
+    dest: ~/Install
+    creates: ~/Install/hadoop-2.8.0
+    copy: no
+
+- name: "Unpack zookeeper"
+  unarchive:
+    src: ~/Download/zookeeper-3.4.10.tar.gz
+    dest: ~/Install
+    creates: ~/Install/zookeeper-3.4.10
+    copy: no
+   
+- name: "Unpack accumulo"
+  unarchive:
+    src: ~/Download/accumulo-1.8.1-bin.tar.gz
+    dest: ~/Install
+    creates: ~/Install/accumulo-1.8.1
+    copy: no
+
+- name: "Set JAVA_HOME in Hadoop"
+  lineinfile:
+    path: ~/Install/hadoop-2.8.0/etc/hadoop/hadoop-env.sh
+    regexp: 'export JAVA_HOME'
+    line: 'export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk'
+ 
+- name: "Change debug logs"
+  lineinfile:
+    path: ~/Install/hadoop-2.8.0/etc/hadoop/hadoop-env.sh
+    regexp: 'export HADOOP_OPTS'
+    line: 'export HADOOP_OPTS="$HADOOP_OPTS -XX:-PrintWarnings -Djava.net.preferIPv4Stack=true" '
+
+- name: "Hadoop config files"
+  copy: 
+    src: "{{ item }}" 
+    dest: ~/Install/hadoop-2.8.0/etc/hadoop/
+    mode: 0644
+  with_fileglob:
+    - "*"
+
+- name: "hadoop format namenode"
+  command: ~/Install/hadoop-2.8.0/bin/hdfs namenode -format
+  args:
+    chdir: ~/Install/hadoop-2.8.0
+    creates:  ~/Install/hadoop-2.8.0/hdfs_storage
+
+- name: "Start the NameNode"
+  command: ~/Install/hadoop-2.8.0/sbin/start-dfs.sh
+
+- name: "Copy the example file zoo_sample.cfg to zoo.cfg"
+  shell: cp ~/Install/zookeeper-3.4.10/conf/zoo_sample.cfg ~/Install/zookeeper-3.4.10/conf/zoo.cfg
+  args:
+    creates: ~/Install/zookeeper-3.4.10/conf/zoo.cfg
+
+- name: "Create zookeeper temporary directory"
+  file: 
+    path: Install/zookeeper-3.4.10/temp
+    state: directory
+    mode: 0755
+
+- name: "Change zookeeper default temp directory"
+  lineinfile:
+    path: ~/Install/zookeeper-3.4.10/conf/zoo.cfg
+    regexp: 'dataDir='
+    line: 'dataDir=Install/zookeeper-3.4.10/temp' 
+
+- name: "Start Zookeeper server"
+  command: ~/Install/zookeeper-3.4.10/bin/zkServer.sh start
+
+- name: "Copy the config sample of 512MB"
+  shell: cp ~/Install/accumulo-1.8.1/conf/examples/512MB/standalone/* ~/Install/accumulo-1.8.1/conf/
+  args:
+    creates: ~/Install/accumulo-1.8.1/conf/gc
+
+- name: "Set HADOOP_HOME variable"
+  lineinfile:
+    path: ~/.bashrc
+    insertafter: EOF
+    line: 'export HADOOP_HOME=~/Install/hadoop-2.8.0/'
+
+- name: "Set ZOOKEEPER_HOME variable"
+  lineinfile:
+    path: ~/.bashrc
+    insertafter: EOF
+    line: 'export ZOOKEEPER_HOME=~/Install/zookeeper-3.4.10/'
+
+- name: "Update the environment variables of the current session"
+  shell: source ~/.bashrc && echo $HADOOP_HOME && echo $ZOOKEEPER_HOME
+
+- name: "Edit accumulo-env.sh config file"
+  lineinfile:
+    path: ~/Install/accumulo-1.8.1/conf/accumulo-env.sh
+    regexp: 'export ACCUMULO_MONITOR_BIND_ALL="true"'
+    line: 'export ACCUMULO_MONITOR_BIND_ALL="true"'
+
+- name: "Configure Accumulo"
+  template: 
+    src: accumulo-site.xml.j2
+    dest: ~/Install/accumulo-1.8.1/conf/accumulo-site.xml
+    mode: 0644
+
+- name: "Check if accumulo has been initialized"
+  shell: ~/Install/hadoop-2.8.0/bin/hdfs dfs -test -d /accumulo
+  register: hdfs_files
+  ignore_errors: yes
+
+- name: "Initialize Accumulo Leader"
+  command: "~/Install/accumulo-1.8.1/bin/accumulo init --instance-name {{ accumulo_instance_name }} --password {{ accumulo_secret }}"
+  when: "hdfs_files.rc == 1"
+ 
+- name: "Start Accumulo"
+  command: "~/Install/accumulo-1.8.1/bin/start-all.sh"
+
+
+
+
+
+
