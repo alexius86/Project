@@ -1,0 +1,7 @@
+---
+- hosts: localhost
+  remote_user: "{{ test_user }}"
+  become: false
+  roles:
+  - basic
+
