@@ -1,0 +1,7 @@
+falcon
+falcon-multipart
+bcrypt
+itsdangerous
+shortuuid
+cryptography
+marshmallow
