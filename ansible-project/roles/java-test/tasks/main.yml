@@ -1,5 +1,0 @@
-- name: "Add 0.0.0.0 to known_hosts"
-  shell: ssh -o "StrictHostKeyChecking no" 0.0.0.0
-
-  
-
