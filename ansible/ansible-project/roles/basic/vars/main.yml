@@ -1,5 +1,0 @@
----
-accumulo_secret: "mypass"
-accumulo_instance_name: "ACCUMULO"
-accumulo_key: "PASS1234"
-test_user: "coa"
